@@ -1,0 +1,13 @@
+{
+  "name": "xbrl-spreadsheet",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "test:browser": "node scripts/browser-regression.mjs",
+    "test:webkit": "node scripts/webkit-regression.mjs",
+    "test:safari": "node scripts/safari-smoke.mjs",
+    "test:safari:report": "node scripts/safari-smoke.mjs --allow-blocked",
+    "check": "node --check src/spreadsheet-core.mjs && node --check tests/spreadsheet-core.test.mjs && node --check tests/index-contract.test.mjs && node --check scripts/browser-regression.mjs && node --check scripts/webkit-regression.mjs && node --check scripts/safari-smoke.mjs && xcrun swiftc -parse-as-library -typecheck scripts/webkit-regression.swift -framework AppKit -framework WebKit"
+  }
+}

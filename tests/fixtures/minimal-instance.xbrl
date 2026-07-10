@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xbrli:xbrl
+  xmlns:xbrli="http://www.xbrl.org/2003/instance"
+  xmlns:iso4217="http://www.xbrl.org/2003/iso4217"
+  xmlns:dart="http://example.test/dart/2025">
+  <xbrli:context id="C-2025">
+    <xbrli:entity>
+      <xbrli:identifier scheme="http://dart.fss.or.kr/entity">00123456</xbrli:identifier>
+    </xbrli:entity>
+    <xbrli:period>
+      <xbrli:instant>2025-12-31</xbrli:instant>
+    </xbrli:period>
+  </xbrli:context>
+  <xbrli:unit id="KRW">
+    <xbrli:measure>iso4217:KRW</xbrli:measure>
+  </xbrli:unit>
+  <dart:Assets contextRef="C-2025" unitRef="KRW" decimals="-3">12345000</dart:Assets>
+  <dart:EntityRegistrantName contextRef="C-2025">테스트 주식회사</dart:EntityRegistrantName>
+</xbrli:xbrl>

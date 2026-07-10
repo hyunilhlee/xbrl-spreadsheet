@@ -1,0 +1,17 @@
+{
+  "version": 4,
+  "title": "Safari JSON fixture",
+  "sheets": [
+    {
+      "id": "safari-fixture",
+      "name": "Fixture",
+      "rows": 20,
+      "cols": 8,
+      "cells": {
+        "0,0": { "v": "42", "style": { "bold": true } },
+        "0,1": { "v": "=A1*2", "style": {} }
+      },
+      "colWidths": [112, 112, 112, 112, 112, 112, 112, 112]
+    }
+  ]
+}
