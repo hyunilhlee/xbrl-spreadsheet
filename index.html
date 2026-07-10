@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XBRL 오프라인 스프레드시트</title>
+<style>
+:root{
+  --green:#0f9d58;--green-dark:#0b8043;--blue:#1a73e8;--grid:#e0e3e7;
+  --header:#f8f9fa;--text:#202124;--muted:#5f6368;--row-h:28px;--row-head:52px;
+}
+*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden}
+body{font-family:Arial,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:#fff;font-size:13px}
+button,input,select{font:inherit;color:inherit}
+button{border:1px solid transparent;background:transparent;border-radius:4px;cursor:pointer}
+button:hover{background:#f1f3f4}button:disabled{opacity:.45;cursor:default}
+.app{height:100%;display:flex;flex-direction:column;min-width:760px}
+.topbar{height:46px;display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid #dadce0;background:#fff;flex:none}
+.logo{width:30px;height:30px;border-radius:5px;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:700;font-size:17px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.title-wrap{min-width:170px;max-width:300px}.title-input{width:100%;border:1px solid transparent;border-radius:4px;padding:4px 7px;font-size:15px;font-weight:600}.title-input:focus{border-color:#dadce0;outline:none}
+.toolbar{display:flex;align-items:center;gap:3px;min-width:0;flex:1;overflow:auto;white-space:nowrap}
+.tool-btn{height:32px;padding:0 9px;display:inline-flex;align-items:center;gap:5px;border:1px solid #dadce0;background:#fff}.tool-btn.primary{background:var(--green);color:#fff;border-color:var(--green)}.tool-btn.primary:hover{background:var(--green-dark)}
+.divider{width:1px;height:24px;background:#dadce0;margin:0 4px;flex:none}.local-badge{margin-left:auto;color:#137333;background:#e6f4ea;padding:5px 8px;border-radius:12px;font-size:11px;flex:none}
+.formatbar{height:38px;display:flex;align-items:center;gap:4px;padding:3px 8px;border-bottom:1px solid #dadce0;background:#fff;flex:none;overflow:auto;white-space:nowrap}
+.formatbar select,.formatbar input{height:28px;border:1px solid #dadce0;border-radius:3px;background:#fff;padding:0 6px}.mini-btn{height:28px;min-width:28px;padding:0 7px;border:1px solid transparent}.mini-btn.active{background:#e8f0fe;color:#1967d2}.zoom{width:62px}.format-select{width:92px}
+.formulabar{height:36px;display:flex;align-items:center;border-bottom:1px solid #dadce0;background:#fff;flex:none}.name-box{width:86px;height:100%;border:0;border-right:1px solid #dadce0;text-align:center;outline:none}.fx{width:38px;text-align:center;font-style:italic;color:var(--muted);font-weight:600}.formula-input{height:100%;flex:1;border:0;border-left:1px solid #dadce0;padding:0 10px;outline:none;font-family:Arial,"Malgun Gothic",sans-serif}
+.workspace{flex:1;min-height:0;position:relative;background:#fff}.grid-shell{position:absolute;inset:0;display:grid;grid-template-columns:var(--row-head) 1fr;grid-template-rows:28px 1fr;overflow:hidden}
+.corner{grid-column:1;grid-row:1;background:var(--header);border-right:1px solid #c7cacf;border-bottom:1px solid #c7cacf;z-index:5;position:relative}.corner:after{content:"";position:absolute;right:4px;bottom:4px;border-left:6px solid transparent;border-top:6px solid #9aa0a6}
+.col-header-viewport{grid-column:2;grid-row:1;overflow:hidden;background:var(--header);border-bottom:1px solid #c7cacf;position:relative}.col-header-canvas{position:absolute;left:0;top:0;height:28px;will-change:transform}.col-header{position:absolute;top:0;height:28px;border-right:1px solid #c7cacf;display:flex;align-items:center;justify-content:center;color:#5f6368;user-select:none;background:var(--header)}.col-header.selected,.row-header.selected{background:#d9eadf;color:#137333;font-weight:600}.col-resizer{position:absolute;right:-3px;top:0;width:7px;height:100%;cursor:col-resize;z-index:2}
+.row-header-viewport{grid-column:1;grid-row:2;overflow:hidden;background:var(--header);border-right:1px solid #c7cacf;position:relative}.row-header-canvas{position:absolute;left:0;top:0;width:var(--row-head);will-change:transform}.row-header{position:absolute;left:0;width:var(--row-head);height:var(--row-h);border-bottom:1px solid #c7cacf;display:flex;align-items:center;justify-content:center;color:#5f6368;user-select:none;background:var(--header)}
+.grid-viewport{grid-column:2;grid-row:2;overflow:auto;position:relative;outline:none;background:#fff}.grid-canvas{position:relative;min-width:1px;min-height:1px}.cell{position:absolute;height:var(--row-h);border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);padding:4px 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:#fff;line-height:19px;user-select:none;font-variant-numeric:tabular-nums}.cell.numeric{text-align:right}.cell.bold{font-weight:700}.cell.align-center{text-align:center}.cell.align-right{text-align:right}.cell.align-left{text-align:left}.cell.error{color:#d93025}.cell:hover{background:#f8fbff}
+.selection-box{position:absolute;border:2px solid var(--blue);background:rgba(26,115,232,.06);pointer-events:none;z-index:8}.active-box{position:absolute;border:2px solid var(--blue);pointer-events:none;z-index:9}.fill-handle{position:absolute;width:7px;height:7px;background:var(--blue);right:-4px;bottom:-4px;border:1px solid #fff}
+.cell-editor{position:absolute;z-index:20;border:2px solid var(--blue);padding:3px 5px;outline:none;background:#fff;font:13px Arial,"Malgun Gothic",sans-serif;min-width:40px;display:none;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.sheetbar{height:38px;border-top:1px solid #dadce0;background:#f8f9fa;display:flex;align-items:center;flex:none}.sheet-plus{width:38px;height:100%;font-size:20px}.sheet-tabs{display:flex;align-items:stretch;overflow:auto;height:100%;flex:1}.sheet-tab{height:100%;min-width:100px;padding:0 18px;border-radius:0;border-right:1px solid #e3e5e8;color:#5f6368}.sheet-tab.active{background:#fff;color:#137333;font-weight:600;border-bottom:3px solid var(--green)}.sheet-tab:hover{background:#eef3ef}.sheet-menu{width:36px;height:100%}
+.statusbar{height:24px;border-top:1px solid #dadce0;background:#fff;display:flex;align-items:center;padding:0 10px;color:#5f6368;font-size:11px;gap:18px;flex:none}.status-spacer{flex:1}.status-good{color:#137333}.status-bad{color:#d93025}
+.file-input{display:none}.drop-overlay{display:none;position:fixed;inset:0;background:rgba(26,115,232,.12);border:4px dashed var(--blue);z-index:100;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#174ea6}.drop-overlay.show{display:flex}
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(32,33,36,.38);z-index:200;align-items:center;justify-content:center}.modal-backdrop.show{display:flex}.modal{width:min(720px,92vw);max-height:82vh;overflow:auto;background:#fff;border-radius:10px;box-shadow:0 16px 50px rgba(0,0,0,.28)}.modal-head{display:flex;align-items:center;padding:15px 18px;border-bottom:1px solid #dadce0}.modal-head h2{margin:0;font-size:18px}.modal-close{margin-left:auto;font-size:20px}.modal-body{padding:18px;line-height:1.65}.modal-body h3{font-size:14px;margin:18px 0 7px}.modal-body code{background:#f1f3f4;padding:2px 5px;border-radius:3px}.modal-body table{width:100%;border-collapse:collapse}.modal-body th,.modal-body td{border:1px solid #dadce0;padding:7px;text-align:left}.warning{background:#fef7e0;border-left:4px solid #f9ab00;padding:10px 12px;margin:10px 0}.toast{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);background:#303134;color:#fff;padding:9px 15px;border-radius:4px;z-index:300;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}
+@media(max-width:900px){.local-badge{display:none}.title-wrap{max-width:190px}.tool-btn span.label{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">X</div>
+    <div class="title-wrap"><input id="workbookTitle" class="title-input" value="XBRL 분석 시트" aria-label="문서 제목"></div>
+    <div class="toolbar">
+      <button id="openXbrlBtn" class="tool-btn primary">📂 <span class="label">XBRL 열기</span></button>
+      <button id="newSheetBtn" class="tool-btn">＋ <span class="label">시트</span></button>
+      <button id="addRowsBtn" class="tool-btn">행 +100</button>
+      <button id="addColsBtn" class="tool-btn">열 +10</button>
+      <div class="divider"></div>
+      <button id="saveJsonBtn" class="tool-btn">�� <span class="label">작업 저장</span></button>
+      <button id="loadJsonBtn" class="tool-btn">↥ <span class="label">작업 불러오기</span></button>
+      <button id="exportCsvBtn" class="tool-btn">CSV</button>
+      <button id="exportExcelBtn" class="tool-btn">Excel 호환</button>
+      <div class="divider"></div>
+      <button id="undoBtn" class="tool-btn" title="실행 취소 Ctrl+Z">↶</button>
+      <button id="redoBtn" class="tool-btn" title="다시 실행 Ctrl+Y">↷</button>
+      <button id="helpBtn" class="tool-btn">?</button>
+    </div>
+    <div class="local-badge">🔒 브라우저 내부 처리</div>
+  </div>
+
+  <div class="formatbar">
+    <button id="boldBtn" class="mini-btn" title="굵게 Ctrl+B"><b>B</b></button>
+    <button class="mini-btn align-btn" data-align="left" title="왼쪽 정렬">≡</button>
+    <button class="mini-btn align-btn" data-align="center" title="가운데 정렬">≡</button>
+    <button class="mini-btn align-btn" data-align="right" title="오른쪽 정렬">≡</button>
+    <div class="divider"></div>
+    <select id="numberFormat" class="format-select" title="표시 형식">
+      <option value="auto">자동</option><option value="number">숫자</option><option value="currency">통화</option><option value="percent">퍼센트</option><option value="text">텍스트</option>
+    </select>
+    <select id="decimalPlaces" title="소수 자릿수"><option value="0">소수 0</option><option value="1">소수 1</option><option value="2">소수 2</option><option value="3">소수 3</option><option value="4">소수 4</option></select>
+    <div class="divider"></div>
+    <button id="clearFormatBtn" class="mini-btn">서식 지우기</button>
+    <button id="clearCellsBtn" class="mini-btn">내용 지우기</button>
+    <div class="divider"></div>
+    <select id="zoomSelect" class="zoom" title="확대/축소"><option value="0.8">80%</option><option value="0.9">90%</option><option value="1" selected>100%</option><option value="1.1">110%</option><option value="1.25">125%</option></select>
+  </div>
+
+  <div class="formulabar">
+    <input id="nameBox" class="name-box" value="A1" aria-label="셀 주소">
+    <div class="fx">fx</div>
+    <input id="formulaInput" class="formula-input" placeholder="값 또는 수식 입력: =SUM(A1:A10)" aria-label="수식 입력줄">
+  </div>
+
+  <div class="workspace">
+    <div class="grid-shell">
+      <div id="corner" class="corner" title="전체 선택"></div>
+      <div class="col-header-viewport"><div id="colHeaderCanvas" class="col-header-canvas"></div></div>
+      <div class="row-header-viewport"><div id="rowHeaderCanvas" class="row-header-canvas"></div></div>
+      <div id="gridViewport" class="grid-viewport" tabindex="0">
+        <div id="gridCanvas" class="grid-canvas">
+          <div id="selectionBox" class="selection-box"></div>
+          <div id="activeBox" class="active-box"><div class="fill-handle"></div></div>
+          <input id="cellEditor" class="cell-editor" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheetbar">
+    <button id="sheetPlus" class="sheet-plus" title="새 시트">＋</button>
+    <div id="sheetTabs" class="sheet-tabs"></div>
+    <button id="sheetMenuBtn" class="sheet-menu" title="현재 시트 이름 변경">⋮</button>
+  </div>
+  <div class="statusbar">
+    <span id="appStatus" class="status-good">준비됨</span><span id="selectionStats"></span><span class="status-spacer"></span><span id="dimensionStatus"></span>
+  </div>
+</div>
+
+<input id="xbrlInput" class="file-input" type="file" accept=".xbrl,.xml,.xhtml,.html" multiple>
+<input id="jsonInput" class="file-input" type="file" accept=".json,.xbrlsheet">
+<div id="dropOverlay" class="drop-overlay">XBRL/XML 파일을 여기에 놓으세요</div>
+<div id="toast" class="toast"></div>
+
+<div id="helpModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head"><h2>사용 방법과 지원 수식</h2><button id="helpClose" class="modal-close">×</button></div>
+    <div class="modal-body">
+      <div class="warning">이 파일은 인터넷이나 외부 서버로 데이터를 전송하지 않습니다. 단일 HTML 파일 안에서만 처리됩니다.</div>
+      <h3>기본 사용</h3>
+      <p><b>XBRL 열기</b>에서 인스턴스 파일과 <code>*_lab.xml</code> 라벨 파일을 함께 선택하면 재무표, Facts, Contexts, 계산 시트가 생성됩니다. 셀을 더블클릭하거나 선택 후 바로 입력하면 편집할 수 있습니다.</p>
+      <h3>수식 예시</h3>
+      <table><tr><th>용도</th><th>입력 예</th></tr>
+        <tr><td>사칙연산</td><td><code>=A1+B1*2</code></td></tr>
+        <tr><td>합계·평균</td><td><code>=SUM(D2:D20)</code>, <code>=AVERAGE(D2:D20)</code></td></tr>
+        <tr><td>조건</td><td><code>=IF(D2&gt;0,"양수","음수")</code></td></tr>
+        <tr><td>다른 시트 참조</td><td><code>='재무표'!D2-'재무표'!E2</code></td></tr>
+        <tr><td>반올림</td><td><code>=ROUND(A1,2)</code></td></tr>
+      </table>
+      <p>지원 함수: SUM, AVERAGE, MIN, MAX, COUNT, COUNTA, IF, ROUND, ROUNDUP, ROUNDDOWN, ABS, SQRT, POWER, MOD, CONCAT, LEN, AND, OR, NOT.</p>
+      <h3>키보드</h3><p>Enter/Tab 이동, F2 편집, Delete 내용 삭제, Ctrl+C/V/X 복사·붙여넣기·잘라내기, Ctrl+Z/Y 실행 취소·다시 실행, Ctrl+B 굵게.</p>
+      <h3>Excel로 옮기기</h3><p><b>Excel 호환</b>은 모든 시트를 Excel에서 열 수 있는 Spreadsheet XML로 내보냅니다. 수식 결과값과 원본 수식이 함께 포함됩니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const ROW_H=28, ROW_HEAD=52, DEFAULT_COL_W=112, MIN_COL_W=55, MAX_COL_W=520;
+const $=id=>document.getElementById(id);
+const els={
+  viewport:$('gridViewport'),canvas:$('gridCanvas'),colCanvas:$('colHeaderCanvas'),rowCanvas:$('rowHeaderCanvas'),
+  selectionBox:$('selectionBox'),activeBox:$('activeBox'),editor:$('cellEditor'),formula:$('formulaInput'),nameBox:$('nameBox'),
+  tabs:$('sheetTabs'),status:$('appStatus'),selectionStats:$('selectionStats'),dimensionStatus:$('dimensionStatus'),
+  title:$('workbookTitle'),xbrlInput:$('xbrlInput'),jsonInput:$('jsonInput'),toast:$('toast')
+};
+
+const app={
+  workbook:{version:4,title:'XBRL 분석 시트',sheets:[]},activeSheetId:null,
+  active:{r:0,c:0},selection:{r1:0,c1:0,r2:0,c2:0},dragging:false,editing:false,
+  zoom:1,formulaCache:new Map(),history:[],historyIndex:-1,renderQueued:false,resizing:null
+};
+
+const makeId=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const key=(r,c)=>`${r},${c}`;
+const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+function toast(msg){els.toast.textContent=msg;els.toast.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>els.toast.classList.remove('show'),1800)}
+function setStatus(msg,bad=false){els.status.textContent=msg;els.status.className=bad?'status-bad':'status-good'}
+function colName(n){let s='';for(n++;n>0;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s}
+function colIndex(s){let n=0;for(const ch of s.toUpperCase().replace(/\$/g,''))n=n*26+ch.charCodeAt(0)-64;return n-1}
+function a1(r,c){return `${colName(c)}${r+1}`}
+function parseA1(ref){const m=String(ref).trim().match(/^\$?([A-Za-z]{1,4})\$?(\d+)$/);if(!m)return null;return{c:colIndex(m[1]),r:Number(m[2])-1}}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function currentSheet(){return app.workbook.sheets.find(s=>s.id===app.activeSheetId)||app.workbook.sheets[0]}
+function getCell(sheet,r,c,create=false){const k=key(r,c);let cell=sheet.cells[k];if(!cell&&create){cell={v:'',style:{}};sheet.cells[k]=cell}return cell}
+function cellRaw(sheet,r,c){return getCell(sheet,r,c)?.v??''}
+function newSheet(name='시트',rows=300,cols=30){return{id:makeId(),name,rows,cols,cells:{},colWidths:Array(cols).fill(DEFAULT_COL_W)}}
+function uniqueSheetName(base){let name=base,i=2;const names=new Set(app.workbook.sheets.map(s=>s.name));while(names.has(name))name=`${base} ${i++}`;return name}
+
+function normalizedSelection(){const s=app.selection;return{r1:Math.min(s.r1,s.r2),r2:Math.max(s.r1,s.r2),c1:Math.min(s.c1,s.c2),c2:Math.max(s.c1,s.c2)}}
+function setActive(r,c,extend=false){const sh=currentSheet();r=clamp(r,0,sh.rows-1);c=clamp(c,0,sh.cols-1);app.active={r,c};if(extend){app.selection.r2=r;app.selection.c2=c}else app.selection={r1:r,c1:c,r2:r,c2:c};syncFormulaBar();updateSelectionUI();updateSelectionStats();updateFormatToolbar()}
+function selectRange(r1,c1,r2,c2){const sh=currentSheet();app.selection={r1:clamp(r1,0,sh.rows-1),c1:clamp(c1,0,sh.cols-1),r2:clamp(r2,0,sh.rows-1),c2:clamp(c2,0,sh.cols-1)};app.active={r:app.selection.r1,c:app.selection.c1};syncFormulaBar();updateSelectionUI();updateSelectionStats()}
+
+function colOffsets(sheet){const arr=[0];for(let i=0;i<sheet.cols;i++)arr.push(arr[i]+(sheet.colWidths[i]||DEFAULT_COL_W)*app.zoom);return arr}
+function binaryCol(offsets,x){let lo=0,hi=offsets.length-2;while(lo<=hi){const mid=(lo+hi)>>1;if(x<offsets[mid])hi=mid-1;else if(x>=offsets[mid+1])lo=mid+1;else return mid}return clamp(lo,0,offsets.length-2)}
+function ensureDimensions(sheet){while(sheet.colWidths.length<sheet.cols)sheet.colWidths.push(DEFAULT_COL_W)}
+function scheduleRender(){if(app.renderQueued)return;app.renderQueued=true;requestAnimationFrame(()=>{app.renderQueued=false;renderGrid()})}
+
+function renderGrid(){
+  const sh=currentSheet();if(!sh)return;ensureDimensions(sh);app.formulaCache.clear();
+  const offsets=colOffsets(sh),rowH=ROW_H*app.zoom,totalW=offsets[offsets.length-1],totalH=sh.rows*rowH;
+  els.canvas.style.width=`${totalW}px`;els.canvas.style.height=`${totalH}px`;els.colCanvas.style.width=`${totalW}px`;els.rowCanvas.style.height=`${totalH}px`;
+  const sl=els.viewport.scrollLeft,st=els.viewport.scrollTop,vw=els.viewport.clientWidth,vh=els.viewport.clientHeight;
+  const cStart=Math.max(0,binaryCol(offsets,sl)-2),cEnd=Math.min(sh.cols-1,binaryCol(offsets,sl+vw)+2);
+  const rStart=Math.max(0,Math.floor(st/rowH)-3),rEnd=Math.min(sh.rows-1,Math.ceil((st+vh)/rowH)+3);
+  [...els.canvas.querySelectorAll('.cell')].forEach(x=>x.remove());
+  const frag=document.createDocumentFragment();
+  for(let r=rStart;r<=rEnd;r++)for(let c=cStart;c<=cEnd;c++){
+    const div=document.createElement('div');div.className='cell';div.dataset.r=r;div.dataset.c=c;
+    div.style.left=`${offsets[c]}px`;div.style.top=`${r*rowH}px`;div.style.width=`${offsets[c+1]-offsets[c]}px`;div.style.height=`${rowH}px`;div.style.lineHeight=`${Math.max(16,rowH-9)}px`;
+    const cell=getCell(sh,r,c),value=evaluateCell(sh,r,c,new Set());
+    if(cell?.style?.bold)div.classList.add('bold');if(cell?.style?.align)div.classList.add(`align-${cell.style.align}`);
+    if(isError(value))div.classList.add('error');if(isNumericValue(value)&&cell?.style?.align!=='left'&&cell?.style?.align!=='center')div.classList.add('numeric');
+    const text=formatDisplay(value,cell?.style||{});div.textContent=text;div.title=(cell?.v||text||'').length>22?(cell?.v||text):'';frag.appendChild(div)
+  }
+  els.canvas.insertBefore(frag,els.selectionBox);
+  renderHeaders(sh,offsets,rowH,cStart,cEnd,rStart,rEnd,sl,st);updateSelectionUI();els.dimensionStatus.textContent=`${sh.rows.toLocaleString()}행 × ${sh.cols.toLocaleString()}열`;
+}
+function renderHeaders(sh,offsets,rowH,cStart,cEnd,rStart,rEnd,sl,st){
+  els.colCanvas.style.transform=`translateX(${-sl}px)`;els.rowCanvas.style.transform=`translateY(${-st}px)`;
+  els.colCanvas.innerHTML='';els.rowCanvas.innerHTML='';const sel=normalizedSelection();
+  for(let c=cStart;c<=cEnd;c++){const h=document.createElement('div');h.className='col-header'+(sel.c1<=c&&c<=sel.c2?' selected':'');h.dataset.c=c;h.style.left=`${offsets[c]}px`;h.style.width=`${offsets[c+1]-offsets[c]}px`;h.textContent=colName(c);const rz=document.createElement('span');rz.className='col-resizer';rz.dataset.c=c;h.appendChild(rz);els.colCanvas.appendChild(h)}
+  for(let r=rStart;r<=rEnd;r++){const h=document.createElement('div');h.className='row-header'+(sel.r1<=r&&r<=sel.r2?' selected':'');h.dataset.r=r;h.style.top=`${r*rowH}px`;h.style.height=`${rowH}px`;h.textContent=r+1;els.rowCanvas.appendChild(h)}
+}
+function updateSelectionUI(){const sh=currentSheet();if(!sh)return;const offsets=colOffsets(sh),rowH=ROW_H*app.zoom,sel=normalizedSelection();
+  const left=offsets[sel.c1],top=sel.r1*rowH,width=offsets[sel.c2+1]-left,height=(sel.r2-sel.r1+1)*rowH;
+  Object.assign(els.selectionBox.style,{left:`${left}px`,top:`${top}px`,width:`${width}px`,height:`${height}px`});
+  const al=offsets[app.active.c],at=app.active.r*rowH,aw=offsets[app.active.c+1]-al;
+  Object.assign(els.activeBox.style,{left:`${al}px`,top:`${at}px`,width:`${aw}px`,height:`${rowH}px`});
+  if(app.editing)positionEditor();
+}
+function scrollActiveIntoView(){const sh=currentSheet(),off=colOffsets(sh),rowH=ROW_H*app.zoom;const l=off[app.active.c],r=off[app.active.c+1],t=app.active.r*rowH,b=t+rowH;
+  if(l<els.viewport.scrollLeft)els.viewport.scrollLeft=l;else if(r>els.viewport.scrollLeft+els.viewport.clientWidth)els.viewport.scrollLeft=r-els.viewport.clientWidth;
+  if(t<els.viewport.scrollTop)els.viewport.scrollTop=t;else if(b>els.viewport.scrollTop+els.viewport.clientHeight)els.viewport.scrollTop=b-els.viewport.clientHeight;scheduleRender()}
+
+function syncFormulaBar(){const sh=currentSheet();els.nameBox.value=a1(app.active.r,app.active.c);els.formula.value=cellRaw(sh,app.active.r,app.active.c)}
+function beginEdit(initial=null){if(app.editing)return;const sh=currentSheet();app.editing=true;const raw=initial!==null?initial:cellRaw(sh,app.active.r,app.active.c);els.editor.value=raw;positionEditor();els.editor.style.display='block';els.editor.focus();if(initial===null)els.editor.select();else els.editor.setSelectionRange(raw.length,raw.length)}
+function positionEditor(){const sh=currentSheet(),off=colOffsets(sh),rowH=ROW_H*app.zoom,l=off[app.active.c],t=app.active.r*rowH,w=Math.max(off[app.active.c+1]-l,120);Object.assign(els.editor.style,{left:`${l}px`,top:`${t}px`,width:`${w}px`,height:`${rowH}px`})}
+function commitEdit(move=null){if(!app.editing)return;const v=els.editor.value;app.editing=false;els.editor.style.display='none';setCellValue(currentSheet(),app.active.r,app.active.c,v,true);if(move){setActive(app.active.r+move.r,app.active.c+move.c);scrollActiveIntoView()}else{syncFormulaBar();scheduleRender()}}
+function cancelEdit(){app.editing=false;els.editor.style.display='none';syncFormulaBar()}
+function setCellValue(sheet,r,c,v,record=false){const old=cellRaw(sheet,r,c);if(old===String(v))return;const cell=getCell(sheet,r,c,true);cell.v=String(v);if(record)pushHistory({type:'cells',sheetId:sheet.id,changes:[{r,c,old,new:String(v)}]});app.formulaCache.clear();scheduleRender();updateSelectionStats()}
+function setManyCells(sheet,changes,record=true){if(record)pushHistory({type:'cells',sheetId:sheet.id,changes});for(const ch of changes){const cell=getCell(sheet,ch.r,ch.c,true);cell.v=String(ch.new??'')}app.formulaCache.clear();scheduleRender();updateSelectionStats()}
+
+function isError(v){return typeof v==='string'&&v.startsWith('#')}
+function isNumericValue(v){return typeof v==='number'&&Number.isFinite(v)}
+function parseLiteral(raw){const s=String(raw??'');if(s==='')return'';if(/^[-+]?\d+(?:\.\d+)?(?:e[-+]?\d+)?$/i.test(s.replace(/,/g,'')))return Number(s.replace(/,/g,''));if(/^TRUE$/i.test(s))return true;if(/^FALSE$/i.test(s))return false;return s}
+function formatDisplay(v,style){if(v===null||v===undefined)return'';if(isError(v))return v;if(style.format==='text')return String(v);if(typeof v==='boolean')return v?'TRUE':'FALSE';if(typeof v!=='number'||!Number.isFinite(v))return String(v);
+  const d=Number.isInteger(Number(style.decimals))?Number(style.decimals):0;
+  if(style.format==='percent')return new Intl.NumberFormat('ko-KR',{style:'percent',minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+  if(style.format==='currency')return new Intl.NumberFormat('ko-KR',{style:'currency',currency:'KRW',minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+  if(style.format==='number')return new Intl.NumberFormat('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+  return Number.isInteger(v)?new Intl.NumberFormat('ko-KR',{maximumFractionDigits:0}).format(v):new Intl.NumberFormat('ko-KR',{maximumFractionDigits:10}).format(v)
+}
+
+class FormulaTokenizer{
+  constructor(s){this.s=s;this.i=0;this.cur=null;this.next()}
+  isLetter(ch){return !!ch&&(/[A-Za-z_]/.test(ch)||ch.charCodeAt(0)>127)}
+  next(){const s=this.s;while(/\s/.test(s[this.i]||''))this.i++;if(this.i>=s.length){this.cur={t:'EOF'};return this.cur}let ch=s[this.i];
+    if(ch==='"'){let out='';this.i++;while(this.i<s.length){if(s[this.i]==='"'){if(s[this.i+1]==='"'){out+='"';this.i+=2;continue}this.i++;break}out+=s[this.i++]}return this.cur={t:'STR',v:out}}
+    if(ch==="'"){let out='';this.i++;while(this.i<s.length){if(s[this.i]==="'"){if(s[this.i+1]==="'"){out+="'";this.i+=2;continue}this.i++;break}out+=s[this.i++]}return this.cur={t:'SHEET',v:out}}
+    if(/[0-9.]/.test(ch)&&(/[0-9]/.test(ch)||/[0-9]/.test(s[this.i+1]||''))){const st=this.i;this.i++;while(/[0-9.eE+-]/.test(s[this.i]||'')){const p=s[this.i-1],x=s[this.i];if((x==='+'||x==='-')&&!/[eE]/.test(p))break;this.i++}return this.cur={t:'NUM',v:Number(s.slice(st,this.i))}}
+    if(ch==='$'||this.isLetter(ch)){const st=this.i;this.i++;while(this.i<s.length&&(/[A-Za-z0-9_.$]/.test(s[this.i])||s[this.i].charCodeAt(0)>127))this.i++;const v=s.slice(st,this.i);return this.cur={t:/^\$?[A-Za-z]{1,4}\$?\d+$/.test(v)?'CELL':'ID',v}}
+    const two=s.slice(this.i,this.i+2);if(['>=','<=','<>','!='].includes(two)){this.i+=2;return this.cur={t:'OP',v:two}}
+    this.i++;if('+-*/^&%=><'.includes(ch))return this.cur={t:'OP',v:ch};return this.cur={t:ch,v:ch}
+  }
+  eat(t,v=null){if(this.cur.t===t&&(v===null||this.cur.v===v)){const x=this.cur;this.next();return x}return null}
+  need(t,v=null){const x=this.eat(t,v);if(!x)throw new Error('#VALUE!');return x}
+}
+class FormulaParser{
+  constructor(text,ctx){this.z=new FormulaTokenizer(text);this.ctx=ctx}
+  parse(){const v=this.comparison();if(this.z.cur.t!=='EOF')throw new Error('#VALUE!');return v}
+  comparison(){let v=this.concat();while(this.z.cur.t==='OP'&&['=','>','<','>=','<=','<>','!='].includes(this.z.cur.v)){const op=this.z.cur.v;this.z.next();const b=this.concat();v=this.compare(v,b,op)}return v}
+  concat(){let v=this.add();while(this.z.eat('OP','&'))v=String(scalar(v)??'')+String(scalar(this.add())??'');return v}
+  add(){let v=this.mul();while(this.z.cur.t==='OP'&&['+','-'].includes(this.z.cur.v)){const op=this.z.cur.v;this.z.next();v=arith(v,this.mul(),op)}return v}
+  mul(){let v=this.pow();while(this.z.cur.t==='OP'&&['*','/'].includes(this.z.cur.v)){const op=this.z.cur.v;this.z.next();v=arith(v,this.pow(),op)}return v}
+  pow(){let v=this.unary();if(this.z.eat('OP','^'))v=arith(v,this.pow(),'^');return v}
+  unary(){if(this.z.eat('OP','+'))return toNum(this.unary());if(this.z.eat('OP','-')){const n=toNum(this.unary());return isError(n)?n:-n}let v=this.primary();while(this.z.eat('OP','%')){const n=toNum(v);v=isError(n)?n:n/100}return v}
+  primary(){const z=this.z;if(z.cur.t==='NUM'){const v=z.cur.v;z.next();return v}if(z.cur.t==='STR'){const v=z.cur.v;z.next();return v}if(z.eat('(')){const v=this.comparison();z.need(')');return v}
+    if(z.cur.t==='SHEET'){const name=z.cur.v;z.next();z.need('!');return this.reference(name)}
+    if(z.cur.t==='CELL')return this.reference(null);
+    if(z.cur.t==='ID'){const id=z.cur.v;z.next();if(z.eat('!'))return this.reference(id);if(z.eat('(')){const args=[];if(!z.eat(')')){do{args.push(this.comparison())}while(z.eat(',')||z.eat(';'));z.need(')')}return callFn(id,args)}if(/^TRUE$/i.test(id))return true;if(/^FALSE$/i.test(id))return false;throw new Error('#NAME?')}
+    throw new Error('#VALUE!')
+  }
+  reference(sheetName){const first=this.z.need('CELL').v;const a=parseA1(first);if(!a)throw new Error('#REF!');const sh=sheetName?app.workbook.sheets.find(s=>s.name===sheetName):this.ctx.sheet;if(!sh)throw new Error('#REF!');if(this.z.eat(':')){const second=this.z.need('CELL').v,b=parseA1(second);if(!b)throw new Error('#REF!');const out=[];for(let r=Math.min(a.r,b.r);r<=Math.max(a.r,b.r);r++)for(let c=Math.min(a.c,b.c);c<=Math.max(a.c,b.c);c++)out.push(evaluateCell(sh,r,c,this.ctx.stack));return out}return evaluateCell(sh,a.r,a.c,this.ctx.stack)
+  }
+  compare(a,b,op){a=scalar(a);b=scalar(b);if(isError(a))return a;if(isError(b))return b;const an=toNumMaybe(a),bn=toNumMaybe(b);if(an!==null&&bn!==null){a=an;b=bn}else{a=String(a);b=String(b)}switch(op){case'=':return a===b;case'>':return a>b;case'<':return a<b;case'>=':return a>=b;case'<=':return a<=b;case'<>':case'!=':return a!==b}}
+}
+function scalar(v){return Array.isArray(v)?(v[0]??''):v}
+function flatten(args){const out=[];for(const a of args)Array.isArray(a)?out.push(...flatten(a)):out.push(a);return out}
+function toNumMaybe(v){if(typeof v==='number'&&Number.isFinite(v))return v;if(typeof v==='boolean')return v?1:0;if(typeof v==='string'&&v.trim()!==''&&!Number.isNaN(Number(v.replace(/,/g,''))))return Number(v.replace(/,/g,''));return null}
+function toNum(v){v=scalar(v);if(isError(v))return v;const n=toNumMaybe(v);return n===null?'#VALUE!':n}
+function arith(a,b,op){a=toNum(a);b=toNum(b);if(isError(a))return a;if(isError(b))return b;if(op==='/'&&b===0)return'#DIV/0!';return op==='+'?a+b:op==='-'?a-b:op==='*'?a*b:op==='/'?a/b:Math.pow(a,b)}
+function nums(args){return flatten(args).map(toNumMaybe).filter(v=>v!==null)}
+function truthy(v){v=scalar(v);if(isError(v))return false;if(typeof v==='boolean')return v;const n=toNumMaybe(v);return n!==null?n!==0:String(v).length>0}
+function callFn(name,args){name=name.toUpperCase();const ns=nums(args),all=flatten(args);
+  switch(name){case'SUM':return ns.reduce((a,b)=>a+b,0);case'AVERAGE':case'AVG':return ns.length?ns.reduce((a,b)=>a+b,0)/ns.length:'#DIV/0!';case'MIN':return ns.length?Math.min(...ns):0;case'MAX':return ns.length?Math.max(...ns):0;case'COUNT':return ns.length;case'COUNTA':return all.filter(v=>v!==''&&v!==null&&v!==undefined).length;case'IF':return truthy(args[0])?(args[1]??true):(args[2]??false);case'ROUND':{const n=toNum(args[0]),d=toNum(args[1]??0);if(isError(n)||isError(d))return'#VALUE!';const p=10**d;return Math.round((n+Number.EPSILON)*p)/p}case'ROUNDUP':{const n=toNum(args[0]),d=toNum(args[1]??0);if(isError(n)||isError(d))return'#VALUE!';const p=10**d;return(Math.sign(n)||1)*Math.ceil(Math.abs(n)*p)/p}case'ROUNDDOWN':{const n=toNum(args[0]),d=toNum(args[1]??0);if(isError(n)||isError(d))return'#VALUE!';const p=10**d;return(Math.sign(n)||1)*Math.floor(Math.abs(n)*p)/p}case'ABS':{const n=toNum(args[0]);return isError(n)?n:Math.abs(n)}case'SQRT':{const n=toNum(args[0]);return isError(n)?n:n<0?'#NUM!':Math.sqrt(n)}case'POWER':return arith(args[0],args[1],'^');case'MOD':{const a=toNum(args[0]),b=toNum(args[1]);return isError(a)||isError(b)?'#VALUE!':b===0?'#DIV/0!':a%b}case'CONCAT':case'CONCATENATE':return all.map(v=>String(scalar(v)??'')).join('');case'LEN':return String(scalar(args[0])??'').length;case'AND':return all.every(truthy);case'OR':return all.some(truthy);case'NOT':return!truthy(args[0]);default:return'#NAME?'}
+}
+function evaluateCell(sheet,r,c,stack){if(r<0||c<0||r>=sheet.rows||c>=sheet.cols)return'#REF!';const cacheKey=`${sheet.id}:${r},${c}`;if(app.formulaCache.has(cacheKey))return app.formulaCache.get(cacheKey);if(stack.has(cacheKey))return'#CYCLE!';const raw=cellRaw(sheet,r,c);if(!String(raw).startsWith('=')){const v=parseLiteral(raw);app.formulaCache.set(cacheKey,v);return v}stack.add(cacheKey);let result;try{result=new FormulaParser(String(raw).slice(1),{sheet,stack}).parse()}catch(e){result=e.message&&String(e.message).startsWith('#')?e.message:'#VALUE!'}stack.delete(cacheKey);app.formulaCache.set(cacheKey,result);return result}
+
+function updateSelectionStats(){const sh=currentSheet();if(!sh)return;app.formulaCache.clear();const s=normalizedSelection(),values=[];let nonempty=0;const limit=100000;let checked=0;for(let r=s.r1;r<=s.r2&&checked<limit;r++)for(let c=s.c1;c<=s.c2&&checked<limit;c++,checked++){const v=evaluateCell(sh,r,c,new Set());if(v!==''&&v!==null){nonempty++;const n=toNumMaybe(v);if(n!==null)values.push(n)}}let text=`선택 ${s.r2-s.r1+1}×${s.c2-s.c1+1}`;if(values.length)text+=`  합계 ${formatDisplay(values.reduce((a,b)=>a+b,0),{format:'number',decimals:2})}  평균 ${formatDisplay(values.reduce((a,b)=>a+b,0)/values.length,{format:'number',decimals:2})}  개수 ${values.length}`;else if(nonempty)text+=`  데이터 ${nonempty}개`;els.selectionStats.textContent=text}
+
+function applyStyle(patch){const sh=currentSheet(),s=normalizedSelection(),changes=[];for(let r=s.r1;r<=s.r2;r++)for(let c=s.c1;c<=s.c2;c++){const cell=getCell(sh,r,c,true),old={...(cell.style||{})},next={...old,...patch};cell.style=next;changes.push({r,c,oldStyle:old,newStyle:next})}pushHistory({type:'style',sheetId:sh.id,changes});scheduleRender();updateFormatToolbar()}
+function clearFormatting(){const sh=currentSheet(),s=normalizedSelection(),changes=[];for(let r=s.r1;r<=s.r2;r++)for(let c=s.c1;c<=s.c2;c++){const cell=getCell(sh,r,c,true),old={...(cell.style||{})};cell.style={};changes.push({r,c,oldStyle:old,newStyle:{}})}pushHistory({type:'style',sheetId:sh.id,changes});scheduleRender();updateFormatToolbar()}
+function updateFormatToolbar(){const cell=getCell(currentSheet(),app.active.r,app.active.c),st=cell?.style||{};$('boldBtn').classList.toggle('active',!!st.bold);$('numberFormat').value=st.format||'auto';$('decimalPlaces').value=String(st.decimals??0);document.querySelectorAll('.align-btn').forEach(b=>b.classList.toggle('active',b.dataset.align===(st.align||'')))}
+function clearSelected(record=true){const sh=currentSheet(),s=normalizedSelection(),changes=[];for(let r=s.r1;r<=s.r2;r++)for(let c=s.c1;c<=s.c2;c++){const old=cellRaw(sh,r,c);if(old!=='')changes.push({r,c,old,new:''})}if(changes.length)setManyCells(sh,changes,record)}
+
+function pushHistory(action){app.history=app.history.slice(0,app.historyIndex+1);app.history.push(action);if(app.history.length>100)app.history.shift();app.historyIndex=app.history.length-1;updateHistoryButtons()}
+function applyHistory(action,redo){const sh=app.workbook.sheets.find(s=>s.id===action.sheetId);if(!sh)return;if(action.type==='cells')for(const ch of action.changes)getCell(sh,ch.r,ch.c,true).v=redo?ch.new:ch.old;if(action.type==='style')for(const ch of action.changes)getCell(sh,ch.r,ch.c,true).style={...(redo?ch.newStyle:ch.oldStyle)};app.formulaCache.clear();scheduleRender();syncFormulaBar();updateSelectionStats()}
+function undo(){if(app.historyIndex<0)return;applyHistory(app.history[app.historyIndex--],false);updateHistoryButtons()}
+function redo(){if(app.historyIndex>=app.history.length-1)return;applyHistory(app.history[++app.historyIndex],true);updateHistoryButtons()}
+function updateHistoryButtons(){$('undoBtn').disabled=app.historyIndex<0;$('redoBtn').disabled=app.historyIndex>=app.history.length-1}
+
+function copySelection(cut=false,e=null){const sh=currentSheet(),s=normalizedSelection(),lines=[];for(let r=s.r1;r<=s.r2;r++){const row=[];for(let c=s.c1;c<=s.c2;c++)row.push(cellRaw(sh,r,c));lines.push(row.join('\t'))}const text=lines.join('\r\n');if(e?.clipboardData){e.clipboardData.setData('text/plain',text);e.preventDefault()}else navigator.clipboard?.writeText(text).catch(()=>{});if(cut)clearSelected(true);toast(cut?'잘라냈습니다':'복사했습니다')}
+function pasteText(text){const rows=String(text).replace(/\r/g,'').split('\n').map(x=>x.split('\t'));const sh=currentSheet(),maxCols=Math.max(1,...rows.map(x=>x.length));sh.rows=Math.max(sh.rows,app.active.r+rows.length+20);sh.cols=Math.max(sh.cols,app.active.c+maxCols+5);ensureDimensions(sh);const changes=[];for(let i=0;i<rows.length;i++)for(let j=0;j<rows[i].length;j++){const r=app.active.r+i,c=app.active.c+j;changes.push({r,c,old:cellRaw(sh,r,c),new:rows[i][j]})}if(changes.length){setManyCells(sh,changes,true);selectRange(app.active.r,app.active.c,app.active.r+rows.length-1,app.active.c+maxCols-1)}}
+
+function renderTabs(){els.tabs.innerHTML='';for(const sh of app.workbook.sheets){const b=document.createElement('button');b.className='sheet-tab'+(sh.id===app.activeSheetId?' active':'');b.textContent=sh.name;b.dataset.id=sh.id;b.title='더블클릭하면 이름 변경';els.tabs.appendChild(b)}}
+function activateSheet(id){const sh=app.workbook.sheets.find(s=>s.id===id);if(!sh)return;app.activeSheetId=id;app.active={r:0,c:0};app.selection={r1:0,c1:0,r2:0,c2:0};els.viewport.scrollTop=0;els.viewport.scrollLeft=0;renderTabs();syncFormulaBar();scheduleRender();updateSelectionStats();updateFormatToolbar()}
+function addSheet(name=null){const sh=newSheet(uniqueSheetName(name||'시트'));app.workbook.sheets.push(sh);activateSheet(sh.id);toast('새 시트를 만들었습니다')}
+function renameCurrentSheet(){const sh=currentSheet(),name=prompt('시트 이름',sh.name);if(name&&name.trim()){sh.name=uniqueSheetName(name.trim())===`${name.trim()} 2`&&sh.name===name.trim()?name.trim():name.trim();renderTabs();scheduleRender()}}
+function addRows(n=100){const sh=currentSheet();sh.rows+=n;scheduleRender();toast(`${n}개 행을 추가했습니다`)}
+function addCols(n=10){const sh=currentSheet();sh.cols+=n;while(sh.colWidths.length<sh.cols)sh.colWidths.push(DEFAULT_COL_W);scheduleRender();toast(`${n}개 열을 추가했습니다`)}
+
+function download(name,content,type='application/octet-stream'){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),500)}
+function saveJson(){app.workbook.title=els.title.value||'XBRL 분석 시트';download(`${safeFile(app.workbook.title)}.xbrlsheet.json`,JSON.stringify(app.workbook,null,2),'application/json;charset=utf-8');toast('작업 파일을 저장했습니다')}
+function safeFile(s){return String(s).replace(/[\\/:*?"<>|]+/g,'_').slice(0,80)}
+async function loadJson(file){try{const data=JSON.parse(await file.text());if(!data?.sheets?.length)throw new Error('올바른 작업 파일이 아닙니다.');app.workbook=data;els.title.value=data.title||'XBRL 분석 시트';app.history=[];app.historyIndex=-1;activateSheet(data.sheets[0].id);updateHistoryButtons();setStatus('작업 파일을 불러왔습니다')}catch(e){setStatus(e.message,true)}}
+function usedBounds(sh){let mr=0,mc=0,found=false;for(const k of Object.keys(sh.cells)){const [r,c]=k.split(',').map(Number);if(sh.cells[k].v!==''||Object.keys(sh.cells[k].style||{}).length){mr=Math.max(mr,r);mc=Math.max(mc,c);found=true}}return found?{rows:mr+1,cols:mc+1}:{rows:1,cols:1}}
+function exportCsv(){const sh=currentSheet(),b=usedBounds(sh),out=[];app.formulaCache.clear();for(let r=0;r<b.rows;r++){const row=[];for(let c=0;c<b.cols;c++)row.push(csv(cellRaw(sh,r,c)));out.push(row.join(','))}download(`${safeFile(sh.name)}.csv`,'\uFEFF'+out.join('\r\n'),'text/csv;charset=utf-8');toast('현재 시트를 CSV로 저장했습니다')}
+function csv(v){return`"${String(v??'').replace(/"/g,'""')}"`}
+function xmlEsc(s){return String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[ch]))}
+function formulaToR1C1(raw){return String(raw).replace(/((?:'[^']+'|[A-Za-z_가-힣][A-Za-z0-9_가-힣]*)!)?\$?([A-Za-z]{1,4})\$?(\d+)/g,(m,sh,col,row)=>`${sh||''}R${row}C${colIndex(col)+1}`)}
+function exportExcelXml(){app.formulaCache.clear();let sheets='';for(const sh of app.workbook.sheets){const b=usedBounds(sh);let rows='';for(let r=0;r<b.rows;r++){let cells='';for(let c=0;c<b.cols;c++){const raw=cellRaw(sh,r,c),val=evaluateCell(sh,r,c,new Set()),type=typeof val==='number'?'Number':typeof val==='boolean'?'Boolean':'String',excelVal=typeof val==='boolean'?(val?'1':'0'):val;const formula=String(raw).startsWith('=')?` ss:Formula=\"${xmlEsc(formulaToR1C1(raw))}\"`:'';const comment=String(raw).startsWith('=')?`<Comment><Data xmlns=\"http://www.w3.org/TR/REC-html40\">원본 수식: ${xmlEsc(raw)}</Data></Comment>`:'';cells+=`<Cell${formula}><Data ss:Type=\"${type}\">${xmlEsc(excelVal)}</Data>${comment}</Cell>`}rows+=`<Row>${cells}</Row>`}sheets+=`<Worksheet ss:Name=\"${xmlEsc(sh.name.slice(0,31))}\"><Table>${rows}</Table></Worksheet>`}
+  const xml=`<?xml version=\"1.0\"?><?mso-application progid=\"Excel.Sheet\"?><Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\" xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">${sheets}</Workbook>`;download(`${safeFile(els.title.value||'XBRL 분석')}.xml`,'\uFEFF'+xml,'application/vnd.ms-excel');toast('Excel 호환 XML을 저장했습니다')}
+
+function lname(el){return String(el?.localName||el?.nodeName||'').split(':').pop().toLowerCase()}
+function attrCI(el,name){name=name.toLowerCase();if(!el?.attributes)return'';for(const a of [...el.attributes])if(String(a.localName||a.name).split(':').pop().toLowerCase()===name)return a.value||'';return''}
+function text(el){return String(el?.textContent||'').replace(/\s+/g,' ').trim()}
+async function readFileText(file){const buf=await file.arrayBuffer(),bytes=new Uint8Array(buf);let enc='utf-8';if(bytes[0]===255&&bytes[1]===254)enc='utf-16le';else if(bytes[0]===254&&bytes[1]===255)enc='utf-16be';else{const head=new TextDecoder('windows-1252').decode(bytes.slice(0,300));const m=head.match(/encoding\s*=\s*["']([^"']+)/i);if(m){const x=m[1].toLowerCase();enc=['euc-kr','ks_c_5601-1987','cp949'].includes(x)?'euc-kr':x}}try{return new TextDecoder(enc).decode(bytes)}catch{return new TextDecoder('utf-8').decode(bytes)}}
+function parseDoc(source,filename){let doc=new DOMParser().parseFromString(source,'application/xml');if(!doc.querySelector('parsererror'))return doc;doc=new DOMParser().parseFromString(source,'text/html');if(doc.querySelectorAll('*').length)return doc;throw new Error(`${filename}: XML/HTML을 해석하지 못했습니다.`)}
+function conceptKeys(x){x=String(x||'');const local=x.includes(':')?x.split(':').pop():x.includes('_')?x.split('_').slice(1).join('_'):x;return[x,x.replace(':','_'),x.replace('_',':'),local]}
+async function importXbrl(files){setStatus('XBRL 파일을 분석하는 중...');const docs=[],errors=[];for(const file of [...files])try{const source=await readFileText(file);docs.push({file,source,doc:parseDoc(source,file.name)})}catch(e){errors.push(e.message)}
+  const contexts=new Map(),units=new Map(),labels=new Map(),facts=[];
+  for(const {doc} of docs){const all=[...doc.getElementsByTagName('*')];
+    for(const el of all.filter(x=>lname(x)==='context')){const id=attrCI(el,'id');if(!id)continue;const find=n=>allDesc(el,n)[0];const instant=find('instant'),start=find('startdate'),end=find('enddate'),identifier=find('identifier');const dims=[];for(const m of [...allDesc(el,'explicitmember'),...allDesc(el,'typedmember')])dims.push(`${attrCI(m,'dimension')}=${text(m)}`);contexts.set(id,{id,period:instant?text(instant):`${text(start)} ~ ${text(end)}`,start:text(start),end:text(end),instant:text(instant),entity:text(identifier),dimensions:dims.join(' | ')})}
+    for(const el of all.filter(x=>lname(x)==='unit')){const id=attrCI(el,'id');if(!id)continue;const measures=allDesc(el,'measure').map(text);units.set(id,measures.join(' × ')||id)}
+    const locs=new Map(),labs=new Map();for(const el of all.filter(x=>lname(x)==='loc')){const l=attrCI(el,'label'),href=attrCI(el,'href');if(l&&href)locs.set(l,decodeURIComponent(href.split('#').pop()||href))}for(const el of all.filter(x=>lname(x)==='label')){const l=attrCI(el,'label'),lang=attrCI(el,'lang'),role=attrCI(el,'role'),v=text(el),score=(lang.toLowerCase().startsWith('ko')?10:0)-(/documentation/i.test(role)?5:0);if(l&&(!labs.has(l)||score>labs.get(l).score))labs.set(l,{v,score})}for(const arc of all.filter(x=>lname(x)==='labelarc')){const concept=locs.get(attrCI(arc,'from')),lab=labs.get(attrCI(arc,'to'))?.v;if(concept&&lab)for(const k of conceptKeys(concept))if(!labels.has(k))labels.set(k,lab)}
+  }
+  for(const {doc,file,source} of docs){const all=[...doc.getElementsByTagName('*')];let count=0;
+    for(const el of all){const cr=attrCI(el,'contextref');if(!cr)continue;const ln=lname(el);if(['context','unit','identifier','explicitmember','typedmember'].includes(ln))continue;let concept=attrCI(el,'name')||((el.prefix?el.prefix+':':'')+(String(el.localName||el.nodeName).split(':').pop()));let val=text(el),unitRef=attrCI(el,'unitref'),numeric=!!unitRef||ln==='nonfraction'||ln==='fraction';if(ln==='nonfraction'){const n=Number(val.replace(/[\s,]/g,''));if(Number.isFinite(n)){let x=n*Math.pow(10,Number(attrCI(el,'scale')||0));if(attrCI(el,'sign')==='-')x=-Math.abs(x);val=String(x)}}facts.push({concept,value:val,contextRef:cr,unitRef,decimals:attrCI(el,'decimals'),source:file.name,numeric});count++}
+    if(!count){const re=/<([\w.-]+:)?([\w.-]+)\b([^>]*?\bcontextref\s*=\s*["']([^"']+)["'][^>]*)>([\s\S]*?)<\/\1?\2\s*>/gi;let m;while((m=re.exec(source))){const attrs=m[3],concept=(m[1]||'')+m[2],cr=m[4],unit=(attrs.match(/\bunitref\s*=\s*["']([^"']+)/i)||[])[1]||'',val=m[5].replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim();facts.push({concept,value:val,contextRef:cr,unitRef:unit,decimals:'',source:file.name,numeric:!!unit})}}
+  }
+  for(const f of facts){f.label=conceptKeys(f.concept).map(k=>labels.get(k)).find(Boolean)||'';f.context=contexts.get(f.contextRef)||{id:f.contextRef,period:f.contextRef,dimensions:''};f.period=f.context.period||f.contextRef;f.dimensions=f.context.dimensions||'';f.unit=units.get(f.unitRef)||f.unitRef||''}
+  if(!facts.length){setStatus('Fact를 찾지 못했습니다. 인스턴스 XBRL 또는 iXBRL 파일인지 확인하세요.',true);if(errors.length)toast(errors[0]);return}
+  buildSheetsFromXbrl(facts,contexts,docs.map(d=>d.file.name));setStatus(`${facts.length.toLocaleString()}개 Fact를 스프레드시트로 변환했습니다${errors.length?' · 일부 파일 오류':''}`,!!errors.length);if(errors.length)toast(errors[0])
+}
+function allDesc(el,name){return[...el.getElementsByTagName('*')].filter(x=>lname(x)===name)}
+function setData(sheet,r,c,v,style=null){const cell=getCell(sheet,r,c,true);cell.v=String(v??'');if(style)cell.style={...style}}
+function buildSheetsFromXbrl(facts,contexts,filenames){
+  const matrixMap=new Map(),periods=[...new Set(facts.filter(f=>f.numeric).map(f=>f.period).filter(Boolean))].sort();for(const f of facts.filter(f=>f.numeric)){const k=`${f.concept}|${f.dimensions}`;if(!matrixMap.has(k))matrixMap.set(k,{concept:f.concept,label:f.label,dimensions:f.dimensions,vals:new Map()});const row=matrixMap.get(k);if(!row.vals.has(f.period))row.vals.set(f.period,[]);row.vals.get(f.period).push(f)}
+  const matrixRows=[...matrixMap.values()].sort((a,b)=>(a.label||a.concept).localeCompare(b.label||b.concept,'ko'));const m=newSheet('재무표',Math.max(300,matrixRows.length+50),Math.max(12,periods.length+6));m.colWidths=[210,190,210,...periods.map(()=>130),...Array(10).fill(DEFAULT_COL_W)];['계정명','XBRL 태그','차원',...periods].forEach((v,c)=>setData(m,0,c,v,{bold:true,align:c>=3?'center':'left'}));matrixRows.forEach((row,i)=>{const r=i+1;setData(m,r,0,row.label||row.concept);setData(m,r,1,row.concept);setData(m,r,2,row.dimensions);periods.forEach((p,j)=>{const fs=row.vals.get(p)||[];setData(m,r,j+3,fs.map(x=>x.value).join(' / '),{format:'number',decimals:0})})});
+  const fsh=newSheet('Facts',Math.max(500,facts.length+50),14);fsh.colWidths=[185,185,140,190,105,160,230,75,150,...Array(5).fill(DEFAULT_COL_W)];const fh=['계정 태그','표시명','값','기간','단위','Context','차원','소수','파일'];fh.forEach((v,c)=>setData(fsh,0,c,v,{bold:true,align:'center'}));facts.forEach((f,i)=>{const r=i+1;[f.concept,f.label,f.value,f.period,f.unit,f.contextRef,f.dimensions,f.decimals,f.source].forEach((v,c)=>setData(fsh,r,c,v,c===2&&f.numeric?{format:'number',decimals:0}:null))});
+  const carr=[...contexts.values()].sort((a,b)=>String(a.period).localeCompare(String(b.period)));const csh=newSheet('Contexts',Math.max(300,carr.length+50),10);csh.colWidths=[180,190,120,120,160,260,...Array(4).fill(DEFAULT_COL_W)];['Context ID','기간','시작일','종료일/기준일','Entity','차원'].forEach((v,c)=>setData(csh,0,c,v,{bold:true,align:'center'}));carr.forEach((x,i)=>[x.id,x.period,x.start,x.instant||x.end,x.entity,x.dimensions].forEach((v,c)=>setData(csh,i+1,c,v)));
+  const calc=newSheet('계산 시트',300,30);calc.colWidths=[190,140,140,140,...Array(26).fill(DEFAULT_COL_W)];setData(calc,0,0,'XBRL 계산 작업 공간',{bold:true});setData(calc,2,0,'예: 다른 시트 값 참조');setData(calc,2,1,"='재무표'!D2");setData(calc,3,0,'예: 차이 계산');setData(calc,3,1,"='재무표'!D2-'재무표'!E2");setData(calc,5,0,'불러온 파일');setData(calc,5,1,filenames.join(', '));
+  app.workbook={version:4,title:'XBRL 분석 시트',sheets:[m,fsh,csh,calc]};els.title.value=app.workbook.title;app.history=[];app.historyIndex=-1;activateSheet(m.id);updateHistoryButtons()
+}
+
+function handleGridPointer(e){const cell=e.target.closest('.cell');if(!cell)return;const r=Number(cell.dataset.r),c=Number(cell.dataset.c);if(e.type==='mousedown'){e.preventDefault();app.dragging=true;setActive(r,c,e.shiftKey);els.viewport.focus()}else if(e.type==='mouseover'&&app.dragging){app.selection.r2=r;app.selection.c2=c;updateSelectionUI();updateSelectionStats()}}
+function resizeStart(e){const rz=e.target.closest('.col-resizer');if(!rz)return;e.preventDefault();e.stopPropagation();const sh=currentSheet(),c=Number(rz.dataset.c);app.resizing={c,startX:e.clientX,startW:sh.colWidths[c]||DEFAULT_COL_W};document.body.style.cursor='col-resize'}
+function resizeMove(e){if(!app.resizing)return;const sh=currentSheet(),delta=(e.clientX-app.resizing.startX)/app.zoom;sh.colWidths[app.resizing.c]=clamp(app.resizing.startW+delta,MIN_COL_W,MAX_COL_W);scheduleRender()}
+function resizeEnd(){if(app.resizing){app.resizing=null;document.body.style.cursor=''}}
+
+els.viewport.addEventListener('scroll',scheduleRender);els.canvas.addEventListener('mousedown',handleGridPointer);els.canvas.addEventListener('mouseover',handleGridPointer);els.canvas.addEventListener('dblclick',e=>{const cell=e.target.closest('.cell');if(cell){setActive(Number(cell.dataset.r),Number(cell.dataset.c));beginEdit()}});document.addEventListener('mouseup',()=>{app.dragging=false;resizeEnd()});document.addEventListener('mousemove',resizeMove);els.colCanvas.addEventListener('mousedown',e=>{if(e.target.closest('.col-resizer'))return resizeStart(e);const h=e.target.closest('.col-header');if(h){const c=Number(h.dataset.c),sh=currentSheet();selectRange(0,c,sh.rows-1,c)}});els.rowCanvas.addEventListener('mousedown',e=>{const h=e.target.closest('.row-header');if(h){const r=Number(h.dataset.r),sh=currentSheet();selectRange(r,0,r,sh.cols-1)}});$('corner').addEventListener('click',()=>{const sh=currentSheet();selectRange(0,0,sh.rows-1,sh.cols-1)});
+els.editor.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitEdit({r:e.shiftKey?-1:1,c:0})}else if(e.key==='Tab'){e.preventDefault();commitEdit({r:0,c:e.shiftKey?-1:1})}else if(e.key==='Escape'){e.preventDefault();cancelEdit()}});els.editor.addEventListener('blur',()=>{if(app.editing)commitEdit()});
+els.formula.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();setCellValue(currentSheet(),app.active.r,app.active.c,els.formula.value,true);scrollActiveIntoView()}else if(e.key==='Escape')syncFormulaBar()});els.formula.addEventListener('input',()=>{});els.nameBox.addEventListener('keydown',e=>{if(e.key==='Enter'){const p=parseA1(els.nameBox.value);if(p){setActive(p.r,p.c);scrollActiveIntoView()}else syncFormulaBar()}});
+
+document.addEventListener('keydown',e=>{if(app.editing||e.target===els.formula||e.target===els.nameBox||e.target===els.title)return;const ctrl=e.ctrlKey||e.metaKey;if(ctrl&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return}if(ctrl&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(ctrl&&e.key.toLowerCase()==='b'){e.preventDefault();applyStyle({bold:!getCell(currentSheet(),app.active.r,app.active.c)?.style?.bold});return}if(ctrl&&['c','x','v'].includes(e.key.toLowerCase()))return;
+  let dr=0,dc=0;if(e.key==='ArrowUp')dr=-1;else if(e.key==='ArrowDown')dr=1;else if(e.key==='ArrowLeft')dc=-1;else if(e.key==='ArrowRight')dc=1;else if(e.key==='Enter')dr=e.shiftKey?-1:1;else if(e.key==='Tab')dc=e.shiftKey?-1:1;else if(e.key==='F2'){e.preventDefault();beginEdit();return}else if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();clearSelected(true);return}else if(e.key.length===1&&!ctrl&&!e.altKey){e.preventDefault();beginEdit(e.key);return}else return;e.preventDefault();setActive(app.active.r+dr,app.active.c+dc,e.shiftKey);scrollActiveIntoView()});
+document.addEventListener('copy',e=>{if(!app.editing&&e.target!==els.formula)copySelection(false,e)});document.addEventListener('cut',e=>{if(!app.editing&&e.target!==els.formula)copySelection(true,e)});document.addEventListener('paste',e=>{if(!app.editing&&e.target!==els.formula){const t=e.clipboardData?.getData('text/plain');if(t!==undefined){e.preventDefault();pasteText(t)}}});
+
+els.tabs.addEventListener('click',e=>{const b=e.target.closest('.sheet-tab');if(b)activateSheet(b.dataset.id)});els.tabs.addEventListener('dblclick',e=>{const b=e.target.closest('.sheet-tab');if(b){activateSheet(b.dataset.id);renameCurrentSheet()}});$('sheetPlus').onclick=()=>addSheet();$('newSheetBtn').onclick=()=>addSheet();$('sheetMenuBtn').onclick=renameCurrentSheet;$('addRowsBtn').onclick=()=>addRows(100);$('addColsBtn').onclick=()=>addCols(10);
+$('openXbrlBtn').onclick=()=>els.xbrlInput.click();els.xbrlInput.onchange=e=>importXbrl(e.target.files);$('saveJsonBtn').onclick=saveJson;$('loadJsonBtn').onclick=()=>els.jsonInput.click();els.jsonInput.onchange=e=>e.target.files[0]&&loadJson(e.target.files[0]);$('exportCsvBtn').onclick=exportCsv;$('exportExcelBtn').onclick=exportExcelXml;$('undoBtn').onclick=undo;$('redoBtn').onclick=redo;
+$('boldBtn').onclick=()=>applyStyle({bold:!getCell(currentSheet(),app.active.r,app.active.c)?.style?.bold});document.querySelectorAll('.align-btn').forEach(b=>b.onclick=()=>applyStyle({align:b.dataset.align}));$('numberFormat').onchange=e=>applyStyle({format:e.target.value});$('decimalPlaces').onchange=e=>applyStyle({decimals:Number(e.target.value)});$('clearFormatBtn').onclick=clearFormatting;$('clearCellsBtn').onclick=()=>clearSelected(true);$('zoomSelect').onchange=e=>{app.zoom=Number(e.target.value);scheduleRender()};
+$('helpBtn').onclick=()=>$('helpModal').classList.add('show');$('helpClose').onclick=()=>$('helpModal').classList.remove('show');$('helpModal').onclick=e=>{if(e.target===$('helpModal'))$('helpModal').classList.remove('show')};els.title.oninput=()=>app.workbook.title=els.title.value;
+
+let dragDepth=0;document.addEventListener('dragenter',e=>{e.preventDefault();dragDepth++;$('dropOverlay').classList.add('show')});document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('dragleave',e=>{e.preventDefault();if(--dragDepth<=0){dragDepth=0;$('dropOverlay').classList.remove('show')}});document.addEventListener('drop',e=>{e.preventDefault();dragDepth=0;$('dropOverlay').classList.remove('show');const fs=[...e.dataTransfer.files];if(fs.length)importXbrl(fs)});
+window.addEventListener('resize',scheduleRender);
+
+function init(){const sh=newSheet('계산 시트',300,30);setData(sh,0,0,'XBRL 파일을 열거나 이 시트에서 바로 계산하세요.',{bold:true});setData(sh,2,0,'수식 예시');setData(sh,2,1,'=SUM(B5:B10)');app.workbook.sheets=[sh];app.activeSheetId=sh.id;renderTabs();syncFormulaBar();updateHistoryButtons();scheduleRender();updateSelectionStats();updateFormatToolbar()}
+init();
+})();
+</script>
+</body>
+</html>
